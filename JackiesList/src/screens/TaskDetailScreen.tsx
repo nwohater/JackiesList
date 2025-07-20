@@ -1,0 +1,428 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+import { Task } from '../types';
+import taskService from '../services/taskService';
+import { formatTime, formatDate, isPastDue } from '../utils/date';
+import { formatRecurrenceText } from '../utils/recurrence';
+
+interface TaskDetailScreenProps {
+  navigation: any;
+  route: {
+    params: {
+      taskId: string;
+    };
+  };
+}
+
+const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }) => {
+  const [task, setTask] = useState<Task | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTask();
+    }, [])
+  );
+
+  const loadTask = async () => {
+    try {
+      const taskData = await taskService.getTaskById(route.params.taskId);
+      setTask(taskData);
+      
+      if (taskData) {
+        const completionStatus = await taskService.isTaskCompletedToday(taskData.id);
+        setIsCompleted(completionStatus);
+      }
+    } catch (error) {
+      console.error('Error loading task:', error);
+      Alert.alert('Error', 'Failed to load task details');
+      navigation.goBack();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompleteTask = async () => {
+    if (!task) return;
+
+    try {
+      await taskService.completeTask(task.id);
+      setIsCompleted(true);
+      Alert.alert('Success', 'Task completed!', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error) {
+      console.error('Error completing task:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to complete task';
+      
+      if (errorMessage.includes('already completed')) {
+        Alert.alert('Already Completed', 'This task has already been completed today.');
+        setIsCompleted(true);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
+    }
+  };
+
+  const handleEditTask = () => {
+    if (!task) return;
+    navigation.navigate('CreateTask', { editTaskId: task.id });
+  };
+
+  const handleDeleteTask = () => {
+    if (!task) return;
+
+    Alert.alert(
+      'Delete Task',
+      'Are you sure you want to delete this task?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await taskService.deleteTask(task.id);
+              navigation.goBack();
+            } catch (error) {
+              console.error('Error deleting task:', error);
+              Alert.alert('Error', 'Failed to delete task');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const getTaskIcon = (type: Task['type']) => {
+    switch (type) {
+      case 'appointment':
+        return 'event';
+      case 'chore':
+        return 'cleaning-services';
+      case 'task':
+        return 'check-circle-outline';
+      default:
+        return 'radio-button-unchecked';
+    }
+  };
+
+  const getPriorityColor = (priority: Task['priority']) => {
+    switch (priority) {
+      case 'high':
+        return '#FF5252';
+      case 'medium':
+        return '#FFC107';
+      case 'low':
+        return '#4CAF50';
+      default:
+        return '#757575';
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icon name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Task Details</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.centered}>
+          <Text>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!task) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icon name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Task Details</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.centered}>
+          <Text>Task not found</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const isOverdue = isPastDue(task.dueDate, task.dueTime);
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icon name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Task Details</Text>
+        <TouchableOpacity onPress={handleEditTask}>
+          <Icon name="edit" size={24} color="#2196F3" />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.content}>
+        <View style={styles.taskCard}>
+          <View style={styles.taskHeader}>
+            <Icon
+              name={getTaskIcon(task.type)}
+              size={32}
+              color={getPriorityColor(task.priority)}
+            />
+            <View style={styles.taskTitleContainer}>
+              <Text style={[styles.taskTitle, isOverdue && styles.overdueText]}>
+                {task.title}
+              </Text>
+              <Text style={styles.taskType}>
+                {task.type.charAt(0).toUpperCase() + task.type.slice(1)}
+              </Text>
+            </View>
+          </View>
+
+          {task.description && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Description</Text>
+              <Text style={styles.description}>{task.description}</Text>
+            </View>
+          )}
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Due Date</Text>
+            <Text style={[styles.dateText, isOverdue && styles.overdueText]}>
+              {formatDate(task.dueDate)}
+              {task.dueTime && ` at ${formatTime(task.dueTime)}`}
+            </Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Priority</Text>
+            <View style={styles.priorityContainer}>
+              <View
+                style={[
+                  styles.priorityDot,
+                  { backgroundColor: getPriorityColor(task.priority) },
+                ]}
+              />
+              <Text style={styles.priorityText}>
+                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+              </Text>
+            </View>
+          </View>
+
+          {task.isRecurring && task.recurrencePattern && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Recurrence</Text>
+              <Text style={styles.recurrenceText}>
+                {formatRecurrenceText(task.recurrencePattern, task.recurrenceInterval)}
+              </Text>
+            </View>
+          )}
+
+          {isOverdue && (
+            <View style={styles.overdueWarning}>
+              <Icon name="warning" size={20} color="#FF5252" />
+              <Text style={styles.overdueWarningText}>This task is overdue</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={[
+              styles.completeButton,
+              isCompleted && styles.completedButton
+            ]}
+            onPress={handleCompleteTask}
+            disabled={isCompleted}
+          >
+            <Icon 
+              name={isCompleted ? "check-circle" : "check"} 
+              size={20} 
+              color="#FFFFFF" 
+            />
+            <Text style={styles.completeButtonText}>
+              {isCompleted ? 'Completed Today' : 'Complete Task'}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={handleDeleteTask}
+          >
+            <Icon name="delete" size={20} color="#FFFFFF" />
+            <Text style={styles.deleteButtonText}>Delete Task</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  taskCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  taskHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  taskTitleContainer: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  taskTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  taskType: {
+    fontSize: 14,
+    color: '#666',
+    textTransform: 'capitalize',
+  },
+  section: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 16,
+    color: '#666',
+    lineHeight: 22,
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  priorityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  priorityDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  priorityText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  recurrenceText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  overdueText: {
+    color: '#FF5252',
+  },
+  overdueWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFEBEE',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  overdueWarningText: {
+    fontSize: 14,
+    color: '#FF5252',
+    marginLeft: 8,
+    fontWeight: '500',
+  },
+  actions: {
+    gap: 15,
+  },
+  completeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 10,
+  },
+  completeButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  completedButton: {
+    backgroundColor: '#81C784',
+    opacity: 0.7,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FF5252',
+    padding: 15,
+    borderRadius: 10,
+  },
+  deleteButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+});
+
+export default TaskDetailScreen;

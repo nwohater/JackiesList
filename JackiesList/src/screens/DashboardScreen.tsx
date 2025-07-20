@@ -15,10 +15,12 @@ import { Task, DashboardMetrics } from '../types';
 import taskService from '../services/taskService';
 import { formatTime, isPastDue } from '../utils/date';
 import { testSQLiteConnection } from '../utils/databaseTest';
+import { useTheme } from '../contexts/ThemeContext';
 
 type FilterType = 'all' | 'completed' | 'overdue' | 'pending';
 
 const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { theme } = useTheme();
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [todayTasks, setTodayTasks] = useState<Task[]>([]);
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
@@ -181,8 +183,9 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         key={task.id}
         style={[
           styles.taskItem, 
-          isOverdue && styles.overdueTask,
-          isCompleted && styles.completedTask
+          { backgroundColor: theme.cardBackground },
+          isOverdue && { backgroundColor: theme.error + '20' },
+          isCompleted && { backgroundColor: theme.success + '20', opacity: 0.7 }
         ]}
         onPress={() => navigation.navigate('TaskDetail', { taskId: task.id })}
       >
@@ -193,11 +196,15 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             color={getPriorityColor(task.priority)}
           />
           <View style={styles.taskInfo}>
-            <Text style={[styles.taskTitle, isOverdue && styles.overdueText]}>
+            <Text style={[
+              styles.taskTitle, 
+              { color: theme.text },
+              isOverdue && { color: theme.error }
+            ]}>
               {task.title}
             </Text>
             {task.dueTime && (
-              <Text style={styles.taskTime}>{formatTime(task.dueTime)}</Text>
+              <Text style={[styles.taskTime, { color: theme.textSecondary }]}>{formatTime(task.dueTime)}</Text>
             )}
           </View>
         </View>
@@ -217,7 +224,7 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <Icon 
             name={isCompleted ? "check-circle" : "check"} 
             size={24} 
-            color={isCompleted ? "#4CAF50" : "#4CAF50"} 
+            color={isCompleted ? theme.success : theme.success} 
           />
         </TouchableOpacity>
       </TouchableOpacity>
@@ -225,84 +232,100 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.primary }]} edges={['top']}>
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: theme.background }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-      <View style={styles.header}>
-        <Text style={styles.title}>Jackie's List</Text>
+      <View style={[styles.header, { backgroundColor: theme.primary }]}>
+        <Text style={[styles.title, { color: theme.surface }]}>Jackie's List</Text>
         <TouchableOpacity
           onPress={() => navigation.navigate('CreateTask')}
           style={styles.addButton}
         >
-          <Icon name="add" size={28} color="#FFFFFF" />
+          <Icon name="add" size={28} color={theme.surface} />
         </TouchableOpacity>
       </View>
 
       <View style={styles.metricsContainer}>
         <TouchableOpacity 
-          style={[styles.metricCard, activeFilter === 'all' && styles.metricCardActive]}
+          style={[
+            styles.metricCard, 
+            { backgroundColor: theme.cardBackground },
+            activeFilter === 'all' && { backgroundColor: theme.primary + '20', borderColor: theme.primary }
+          ]}
           onPress={() => applyFilter('all')}
         >
-          <Text style={styles.metricValue}>{metrics.todayTasks}</Text>
-          <Text style={styles.metricLabel}>Today</Text>
+          <Text style={[styles.metricValue, { color: theme.text }]}>{metrics.todayTasks}</Text>
+          <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Today</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.metricCard, activeFilter === 'completed' && styles.metricCardActive]}
+          style={[
+            styles.metricCard, 
+            { backgroundColor: theme.cardBackground },
+            activeFilter === 'completed' && { backgroundColor: theme.primary + '20', borderColor: theme.primary }
+          ]}
           onPress={() => applyFilter('completed')}
         >
-          <Text style={[styles.metricValue, { color: '#4CAF50' }]}>
+          <Text style={[styles.metricValue, { color: theme.success }]}>
             {metrics.completedToday}
           </Text>
-          <Text style={styles.metricLabel}>Done</Text>
+          <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Done</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.metricCard, activeFilter === 'overdue' && styles.metricCardActive]}
+          style={[
+            styles.metricCard, 
+            { backgroundColor: theme.cardBackground },
+            activeFilter === 'overdue' && { backgroundColor: theme.primary + '20', borderColor: theme.primary }
+          ]}
           onPress={() => applyFilter('overdue')}
         >
-          <Text style={[styles.metricValue, { color: '#FF5252' }]}>
+          <Text style={[styles.metricValue, { color: theme.error }]}>
             {metrics.overdueTasks}
           </Text>
-          <Text style={styles.metricLabel}>Late</Text>
+          <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>Late</Text>
         </TouchableOpacity>
         <TouchableOpacity 
-          style={[styles.metricCard, activeFilter === 'pending' && styles.metricCardActive]}
+          style={[
+            styles.metricCard, 
+            { backgroundColor: theme.cardBackground },
+            activeFilter === 'pending' && { backgroundColor: theme.primary + '20', borderColor: theme.primary }
+          ]}
           onPress={() => applyFilter('pending')}
         >
-          <Text style={[styles.metricValue, { color: '#2196F3' }]}>
+          <Text style={[styles.metricValue, { color: theme.primary }]}>
             {allTasks.length - completedTasks.size - metrics.overdueTasks}
           </Text>
-          <Text style={styles.metricLabel}>ToDo</Text>
+          <Text style={[styles.metricLabel, { color: theme.textSecondary }]}>ToDo</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.completionRate}>
-        <Text style={styles.completionRateLabel}>Today's Completion</Text>
-        <View style={styles.progressBar}>
+      <View style={[styles.completionRate, { backgroundColor: theme.cardBackground }]}>
+        <Text style={[styles.completionRateLabel, { color: theme.text }]}>Today's Completion</Text>
+        <View style={[styles.progressBar, { backgroundColor: theme.border }]}>
           <View
             style={[
               styles.progressFill,
-              { width: `${metrics.completionRate}%` },
+              { width: `${metrics.completionRate}%`, backgroundColor: theme.success },
             ]}
           />
         </View>
-        <Text style={styles.completionRateText}>
+        <Text style={[styles.completionRateText, { color: theme.textSecondary }]}>
           {metrics.completionRate}%
         </Text>
       </View>
 
       <View style={styles.tasksSection}>
-        <Text style={styles.sectionTitle}>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
           {activeFilter === 'all' ? "Today" :
            activeFilter === 'completed' ? 'Completed Tasks' :
            activeFilter === 'overdue' ? 'Overdue Tasks' :
            'Pending Tasks'}
         </Text>
         {todayTasks.length === 0 ? (
-          <Text style={styles.emptyText}>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
             {activeFilter === 'all' ? 'No tasks for today!' :
              activeFilter === 'completed' ? 'No completed tasks!' :
              activeFilter === 'overdue' ? 'No overdue tasks!' :
@@ -320,23 +343,19 @@ const DashboardScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#2196F3', // Match header color for status bar area
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#2196F3',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
   },
   addButton: {
     width: 48,
@@ -354,7 +373,6 @@ const styles = StyleSheet.create({
   metricCard: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
     padding: 15,
     borderRadius: 10,
     flex: 1,
@@ -365,20 +383,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
-  },
-  metricCardActive: {
-    backgroundColor: '#E3F2FD',
     borderWidth: 2,
-    borderColor: '#2196F3',
+    borderColor: 'transparent',
   },
   metricValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
   },
   metricLabel: {
     fontSize: 12,
-    color: '#666',
     marginTop: 5,
     textAlign: 'center',
     minHeight: 16,
@@ -386,7 +399,6 @@ const styles = StyleSheet.create({
   completionRate: {
     marginHorizontal: 20,
     marginBottom: 20,
-    backgroundColor: '#FFFFFF',
     padding: 15,
     borderRadius: 10,
     shadowColor: '#000',
@@ -398,22 +410,18 @@ const styles = StyleSheet.create({
   completionRateLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 10,
   },
   progressBar: {
     height: 10,
-    backgroundColor: '#E0E0E0',
     borderRadius: 5,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
   },
   completionRateText: {
     fontSize: 14,
-    color: '#666',
     marginTop: 5,
     textAlign: 'right',
   },
@@ -423,14 +431,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 15,
   },
   taskItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -439,13 +445,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
-  },
-  overdueTask: {
-    backgroundColor: '#FFEBEE',
-  },
-  completedTask: {
-    backgroundColor: '#E8F5E8',
-    opacity: 0.7,
   },
   taskLeft: {
     flexDirection: 'row',
@@ -459,14 +458,9 @@ const styles = StyleSheet.create({
   taskTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
-  },
-  overdueText: {
-    color: '#FF5252',
   },
   taskTime: {
     fontSize: 14,
-    color: '#666',
     marginTop: 2,
   },
   completeButton: {
@@ -477,7 +471,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
     marginTop: 20,
   },

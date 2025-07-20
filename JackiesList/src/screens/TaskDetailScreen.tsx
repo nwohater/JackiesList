@@ -14,6 +14,7 @@ import { Task } from '../types';
 import taskService from '../services/taskService';
 import { formatTime, formatDate, isPastDue } from '../utils/date';
 import { formatRecurrenceText } from '../utils/recurrence';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface TaskDetailScreenProps {
   navigation: any;
@@ -25,6 +26,7 @@ interface TaskDetailScreenProps {
 }
 
 const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -133,16 +135,16 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+        <View style={[styles.header, { backgroundColor: theme.headerBackground, borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#333" />
+            <Icon name="arrow-back" size={24} color={theme.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Task Details</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Task Details</Text>
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.centered}>
-          <Text>Loading...</Text>
+          <Text style={{ color: theme.text }}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
@@ -150,16 +152,16 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
 
   if (!task) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+        <View style={[styles.header, { backgroundColor: theme.headerBackground, borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icon name="arrow-back" size={24} color="#333" />
+            <Icon name="arrow-back" size={24} color={theme.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Task Details</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Task Details</Text>
           <View style={{ width: 24 }} />
         </View>
         <View style={styles.centered}>
-          <Text>Task not found</Text>
+          <Text style={{ color: theme.text }}>Task not found</Text>
         </View>
       </SafeAreaView>
     );
@@ -168,19 +170,19 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
   const isOverdue = isPastDue(task.dueDate, task.dueTime);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+      <View style={[styles.header, { backgroundColor: theme.headerBackground, borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#333" />
+          <Icon name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Task Details</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Task Details</Text>
         <TouchableOpacity onPress={handleEditTask}>
-          <Icon name="edit" size={24} color="#2196F3" />
+          <Icon name="edit" size={24} color={theme.primary} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.taskCard}>
+      <ScrollView style={[styles.content, { backgroundColor: theme.background }]}>
+        <View style={[styles.taskCard, { backgroundColor: theme.cardBackground }]}>
           <View style={styles.taskHeader}>
             <Icon
               name={getTaskIcon(task.type)}
@@ -188,10 +190,14 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
               color={getPriorityColor(task.priority)}
             />
             <View style={styles.taskTitleContainer}>
-              <Text style={[styles.taskTitle, isOverdue && styles.overdueText]}>
+              <Text style={[
+                styles.taskTitle, 
+                { color: theme.text },
+                isOverdue && { color: theme.error }
+              ]}>
                 {task.title}
               </Text>
-              <Text style={styles.taskType}>
+              <Text style={[styles.taskType, { color: theme.textSecondary }]}>
                 {task.type.charAt(0).toUpperCase() + task.type.slice(1)}
               </Text>
             </View>
@@ -199,21 +205,25 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
 
           {task.description && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Description</Text>
-              <Text style={styles.description}>{task.description}</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Description</Text>
+              <Text style={[styles.description, { color: theme.textSecondary }]}>{task.description}</Text>
             </View>
           )}
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Due Date</Text>
-            <Text style={[styles.dateText, isOverdue && styles.overdueText]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Due Date</Text>
+            <Text style={[
+              styles.dateText, 
+              { color: theme.text },
+              isOverdue && { color: theme.error }
+            ]}>
               {formatDate(task.dueDate)}
               {task.dueTime && ` at ${formatTime(task.dueTime)}`}
             </Text>
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Priority</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Priority</Text>
             <View style={styles.priorityContainer}>
               <View
                 style={[
@@ -221,7 +231,7 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
                   { backgroundColor: getPriorityColor(task.priority) },
                 ]}
               />
-              <Text style={styles.priorityText}>
+              <Text style={[styles.priorityText, { color: theme.text }]}>
                 {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
               </Text>
             </View>
@@ -229,17 +239,17 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
 
           {task.isRecurring && task.recurrencePattern && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Recurrence</Text>
-              <Text style={styles.recurrenceText}>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Recurrence</Text>
+              <Text style={[styles.recurrenceText, { color: theme.text }]}>
                 {formatRecurrenceText(task.recurrencePattern, task.recurrenceInterval)}
               </Text>
             </View>
           )}
 
           {isOverdue && (
-            <View style={styles.overdueWarning}>
-              <Icon name="warning" size={20} color="#FF5252" />
-              <Text style={styles.overdueWarningText}>This task is overdue</Text>
+            <View style={[styles.overdueWarning, { backgroundColor: theme.error + '20' }]}>
+              <Icon name="warning" size={20} color={theme.error} />
+              <Text style={[styles.overdueWarningText, { color: theme.error }]}>This task is overdue</Text>
             </View>
           )}
         </View>
@@ -248,7 +258,8 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
           <TouchableOpacity
             style={[
               styles.completeButton,
-              isCompleted && styles.completedButton
+              { backgroundColor: theme.success },
+              isCompleted && { backgroundColor: theme.success + '80', opacity: 0.7 }
             ]}
             onPress={handleCompleteTask}
             disabled={isCompleted}
@@ -256,19 +267,19 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
             <Icon 
               name={isCompleted ? "check-circle" : "check"} 
               size={20} 
-              color="#FFFFFF" 
+              color={theme.surface} 
             />
-            <Text style={styles.completeButtonText}>
+            <Text style={[styles.completeButtonText, { color: theme.surface }]}>
               {isCompleted ? 'Completed Today' : 'Complete Task'}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.deleteButton}
+            style={[styles.deleteButton, { backgroundColor: theme.error }]}
             onPress={handleDeleteTask}
           >
-            <Icon name="delete" size={20} color="#FFFFFF" />
-            <Text style={styles.deleteButtonText}>Delete Task</Text>
+            <Icon name="delete" size={20} color={theme.surface} />
+            <Text style={[styles.deleteButtonText, { color: theme.surface }]}>Delete Task</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -279,21 +290,17 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
   },
   content: {
     flex: 1,
@@ -305,7 +312,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   taskCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
@@ -327,12 +333,10 @@ const styles = StyleSheet.create({
   taskTitle: {
     fontSize: 24,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 4,
   },
   taskType: {
     fontSize: 14,
-    color: '#666',
     textTransform: 'capitalize',
   },
   section: {
@@ -341,17 +345,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   description: {
     fontSize: 16,
-    color: '#666',
     lineHeight: 22,
   },
   dateText: {
     fontSize: 16,
-    color: '#333',
   },
   priorityContainer: {
     flexDirection: 'row',
@@ -365,26 +366,19 @@ const styles = StyleSheet.create({
   },
   priorityText: {
     fontSize: 16,
-    color: '#333',
   },
   recurrenceText: {
     fontSize: 16,
-    color: '#333',
-  },
-  overdueText: {
-    color: '#FF5252',
   },
   overdueWarning: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFEBEE',
     padding: 12,
     borderRadius: 8,
     marginTop: 10,
   },
   overdueWarningText: {
     fontSize: 14,
-    color: '#FF5252',
     marginLeft: 8,
     fontWeight: '500',
   },
@@ -395,30 +389,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4CAF50',
     padding: 15,
     borderRadius: 10,
   },
   completeButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
-  },
-  completedButton: {
-    backgroundColor: '#81C784',
-    opacity: 0.7,
   },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FF5252',
     padding: 15,
     borderRadius: 10,
   },
   deleteButtonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,

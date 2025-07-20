@@ -17,8 +17,10 @@ import { Task, TaskType, RecurrencePattern, Priority } from '../types';
 import taskService from '../services/taskService';
 import notificationService from '../services/notificationService';
 import { getDateString, getTimeString } from '../utils/date';
+import { useTheme } from '../contexts/ThemeContext';
 
 const CreateTaskScreen: React.FC<{ navigation: any; route?: any }> = ({ navigation, route }) => {
+  const { theme } = useTheme();
   const editTaskId = route?.params?.editTaskId;
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -143,65 +145,66 @@ const CreateTaskScreen: React.FC<{ navigation: any; route?: any }> = ({ navigati
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <ScrollView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.headerBackground }]} edges={['top']}>
+      <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.headerBackground, borderBottomColor: theme.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#333" />
+          <Icon name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{editTaskId ? 'Edit Task' : 'Create Task'}</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>{editTaskId ? 'Edit Task' : 'Create Task'}</Text>
         <TouchableOpacity onPress={handleSave}>
-          <Text style={styles.saveButton}>Save</Text>
+          <Text style={[styles.saveButton, { color: theme.primary }]}>Save</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.form}>
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Title</Text>
+          <Text style={[styles.label, { color: theme.text }]}>Title</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
             value={title}
             onChangeText={setTitle}
             placeholder="Enter task title"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textLight}
           />
         </View>
 
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Description</Text>
+          <Text style={[styles.label, { color: theme.text }]}>Description</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[styles.input, styles.textArea, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
             value={description}
             onChangeText={setDescription}
             placeholder="Enter task description (optional)"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.textLight}
             multiline
             numberOfLines={3}
           />
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Type</Text>
-          <View style={styles.segmentedControl}>
+          <Text style={[styles.label, { color: theme.text }]}>Type</Text>
+          <View style={[styles.segmentedControl, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
             {taskTypes.map((taskType) => (
               <TouchableOpacity
                 key={taskType.value}
                 style={[
                   styles.segmentButton,
-                  type === taskType.value && styles.segmentButtonActive,
+                  type === taskType.value && { backgroundColor: theme.primary },
                 ]}
                 onPress={() => setType(taskType.value)}
               >
                 <Icon
                   name={taskType.icon}
                   size={20}
-                  color={type === taskType.value ? '#FFFFFF' : '#666'}
+                  color={type === taskType.value ? theme.surface : theme.textSecondary}
                 />
                 <Text
                   style={[
                     styles.segmentButtonText,
-                    type === taskType.value && styles.segmentButtonTextActive,
+                    { color: theme.textSecondary },
+                    type === taskType.value && { color: theme.surface },
                   ]}
                 >
                   {taskType.label}
@@ -212,14 +215,13 @@ const CreateTaskScreen: React.FC<{ navigation: any; route?: any }> = ({ navigati
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Priority</Text>
-          <View style={styles.segmentedControl}>
+          <Text style={[styles.label, { color: theme.text }]}>Priority</Text>
+          <View style={[styles.segmentedControl, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder }]}>
             {priorities.map((pri) => (
               <TouchableOpacity
                 key={pri.value}
                 style={[
                   styles.segmentButton,
-                  priority === pri.value && styles.segmentButtonActive,
                   priority === pri.value && { backgroundColor: pri.color },
                 ]}
                 onPress={() => setPriority(pri.value)}
@@ -227,7 +229,8 @@ const CreateTaskScreen: React.FC<{ navigation: any; route?: any }> = ({ navigati
                 <Text
                   style={[
                     styles.segmentButtonText,
-                    priority === pri.value && styles.segmentButtonTextActive,
+                    { color: theme.textSecondary },
+                    priority === pri.value && { color: theme.surface },
                   ]}
                 >
                   {pri.label}
@@ -238,67 +241,69 @@ const CreateTaskScreen: React.FC<{ navigation: any; route?: any }> = ({ navigati
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Due Date</Text>
+          <Text style={[styles.label, { color: theme.text }]}>Due Date</Text>
           <TouchableOpacity
-            style={[styles.dateButton, { backgroundColor: '#E3F2FD' }]} // Add visible background
+            style={[styles.dateButton, { backgroundColor: theme.inputBackground, borderColor: theme.primary }]}
             onPress={() => {
               console.log('Opening date picker...');
               setShowDatePicker(true);
             }}
             activeOpacity={0.7}
           >
-            <Icon name="calendar-today" size={20} color="#666" />
-            <Text style={styles.dateButtonText}>
+            <Icon name="calendar-today" size={20} color={theme.textSecondary} />
+            <Text style={[styles.dateButtonText, { color: theme.text }]}>
               {dueDate.toLocaleDateString()}
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Due Time (Optional)</Text>
+          <Text style={[styles.label, { color: theme.text }]}>Due Time (Optional)</Text>
           <TouchableOpacity
-            style={[styles.dateButton, { backgroundColor: '#FFF3E0' }]} // Add visible background
+            style={[styles.dateButton, { backgroundColor: theme.inputBackground, borderColor: theme.primary }]}
             onPress={() => {
               console.log('Opening time picker...');
               setShowTimePicker(true);
             }}
             activeOpacity={0.7}
           >
-            <Icon name="access-time" size={20} color="#666" />
-            <Text style={styles.dateButtonText}>
+            <Icon name="access-time" size={20} color={theme.textSecondary} />
+            <Text style={[styles.dateButtonText, { color: theme.text }]}>
               {dueTime ? dueTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Select time'}
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.switchGroup}>
-          <Text style={styles.label}>Recurring Task</Text>
+          <Text style={[styles.label, { color: theme.text }]}>Recurring Task</Text>
           <Switch
             value={isRecurring}
             onValueChange={setIsRecurring}
-            trackColor={{ false: '#E0E0E0', true: '#81C784' }}
-            thumbColor={isRecurring ? '#4CAF50' : '#f4f3f4'}
+            trackColor={{ false: theme.border, true: theme.success + '80' }}
+            thumbColor={isRecurring ? theme.success : theme.surface}
           />
         </View>
 
         {isRecurring && (
           <>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Recurrence Pattern</Text>
+              <Text style={[styles.label, { color: theme.text }]}>Recurrence Pattern</Text>
               <View style={styles.recurrenceOptions}>
                 {recurrenceOptions.map((option) => (
                   <TouchableOpacity
                     key={option.value}
                     style={[
                       styles.recurrenceButton,
-                      recurrencePattern === option.value && styles.recurrenceButtonActive,
+                      { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder },
+                      recurrencePattern === option.value && { backgroundColor: theme.primary, borderColor: theme.primary },
                     ]}
                     onPress={() => setRecurrencePattern(option.value)}
                   >
                     <Text
                       style={[
                         styles.recurrenceButtonText,
-                        recurrencePattern === option.value && styles.recurrenceButtonTextActive,
+                        { color: theme.textSecondary },
+                        recurrencePattern === option.value && { color: theme.surface },
                       ]}
                     >
                       {option.label}
@@ -310,13 +315,13 @@ const CreateTaskScreen: React.FC<{ navigation: any; route?: any }> = ({ navigati
 
             {recurrencePattern === 'custom' && (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Every X Days</Text>
+                <Text style={[styles.label, { color: theme.text }]}>Every X Days</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: theme.inputBackground, borderColor: theme.inputBorder, color: theme.text }]}
                   value={customInterval}
                   onChangeText={setCustomInterval}
                   placeholder="Enter number of days"
-                  placeholderTextColor="#999"
+                  placeholderTextColor={theme.textLight}
                   keyboardType="numeric"
                 />
               </View>
@@ -363,29 +368,23 @@ const CreateTaskScreen: React.FC<{ navigation: any; route?: any }> = ({ navigati
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF', // Match header color for status bar area
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
   },
   saveButton: {
     fontSize: 16,
-    color: '#2196F3',
     fontWeight: '600',
   },
   form: {
@@ -397,17 +396,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#333',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
   textArea: {
     minHeight: 80,
@@ -415,11 +410,9 @@ const styles = StyleSheet.create({
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
   },
   segmentButton: {
     flex: 1,
@@ -429,30 +422,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
-  segmentButtonActive: {
-    backgroundColor: '#2196F3',
-  },
   segmentButtonText: {
     fontSize: 14,
-    color: '#666',
     marginLeft: 5,
-  },
-  segmentButtonTextActive: {
-    color: '#FFFFFF',
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 12,
-    borderWidth: 2, // Increased border width
-    borderColor: '#2196F3', // Blue border to make it visible
-    minHeight: 50, // Ensure minimum touch area
+    borderWidth: 2,
+    minHeight: 50,
   },
   dateButtonText: {
     fontSize: 16,
-    color: '#333',
     marginLeft: 10,
   },
   switchGroup: {
@@ -467,25 +450,15 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   recurrenceButton: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 16,
     marginRight: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-  },
-  recurrenceButtonActive: {
-    backgroundColor: '#2196F3',
-    borderColor: '#2196F3',
   },
   recurrenceButtonText: {
     fontSize: 14,
-    color: '#666',
-  },
-  recurrenceButtonTextActive: {
-    color: '#FFFFFF',
   },
 });
 

@@ -5,6 +5,8 @@ import AppNavigator from './src/navigation/AppNavigator';
 import CustomSplashScreen from './src/components/CustomSplashScreen';
 import database from './src/services/database';
 import notificationService from './src/services/notificationService';
+import { ThemeProvider } from './src/contexts/ThemeContext';
+import ThemedStatusBar from './src/components/ThemedStatusBar';
 
 function App(): React.JSX.Element {
   const [showSplash, setShowSplash] = useState(true);
@@ -53,8 +55,10 @@ function App(): React.JSX.Element {
 
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="light-content" backgroundColor="#2196F3" />
-      <AppNavigator />
+      <ThemeProvider>
+        <ThemedStatusBar />
+        <AppNavigator />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

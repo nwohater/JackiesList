@@ -15,8 +15,10 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Task } from '../types';
 import taskService from '../services/taskService';
 import { formatTime, isPastDue, getDateString } from '../utils/date';
+import { useTheme } from '../contexts/ThemeContext';
 
 const CalendarScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const { theme } = useTheme();
   const [selectedDate, setSelectedDate] = useState(getDateString(new Date()));
   const [tasksForDate, setTasksForDate] = useState<Task[]>([]);
   const [markedDates, setMarkedDates] = useState<any>({});
@@ -75,17 +77,17 @@ const CalendarScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           }
           
           // Determine mark color based on task status
-          let dotColor = '#2196F3'; // Default blue for pending tasks
+          let dotColor = theme.primary; // Default blue for pending tasks
           if (completedCount === dayTasks.length) {
-            dotColor = '#4CAF50'; // Green for all completed
+            dotColor = theme.success; // Green for all completed
           } else if (overdueCount > 0) {
-            dotColor = '#FF5252'; // Red for any overdue
+            dotColor = theme.error; // Red for any overdue
           }
           
           marks[dateStr] = {
             marked: true,
             dotColor,
-            selectedColor: selectedDate === dateStr ? '#2196F3' : undefined,
+            selectedColor: selectedDate === dateStr ? theme.primary : undefined,
             selected: selectedDate === dateStr,
           };
         }
@@ -95,7 +97,7 @@ const CalendarScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
       if (!marks[selectedDate]) {
         marks[selectedDate] = {
           selected: true,
-          selectedColor: '#2196F3',
+          selectedColor: theme.primary,
         };
       }
       
@@ -156,7 +158,7 @@ const CalendarScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         newMarkedDates[date] = {
           ...newMarkedDates[date],
           selected: date === newDate,
-          selectedColor: date === newDate ? '#2196F3' : undefined,
+          selectedColor: date === newDate ? theme.primary : undefined,
         };
       }
     });
@@ -165,7 +167,7 @@ const CalendarScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
     if (!newMarkedDates[newDate]) {
       newMarkedDates[newDate] = {
         selected: true,
-        selectedColor: '#2196F3',
+        selectedColor: theme.primary,
       };
     }
     
@@ -227,8 +229,9 @@ const CalendarScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
         key={task.id}
         style={[
           styles.taskItem, 
-          isOverdue && styles.overdueTask,
-          isCompleted && styles.completedTask
+          { backgroundColor: theme.cardBackground },
+          isOverdue && { backgroundColor: theme.error + '20' },
+          isCompleted && { backgroundColor: theme.success + '20', opacity: 0.7 }
         ]}
         onPress={() => navigation.navigate('TaskDetail', { taskId: task.id })}
       >
@@ -239,11 +242,15 @@ const CalendarScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
             color={getPriorityColor(task.priority)}
           />
           <View style={styles.taskInfo}>
-            <Text style={[styles.taskTitle, isOverdue && styles.overdueText]}>
+            <Text style={[
+              styles.taskTitle, 
+              { color: theme.text },
+              isOverdue && { color: theme.error }
+            ]}>
               {task.title}
             </Text>
             {task.dueTime && (
-              <Text style={styles.taskTime}>{formatTime(task.dueTime)}</Text>
+              <Text style={[styles.taskTime, { color: theme.textSecondary }]}>{formatTime(task.dueTime)}</Text>
             )}
           </View>
         </View>
@@ -263,7 +270,7 @@ const CalendarScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
           <Icon 
             name={isCompleted ? "check-circle" : "check"} 
             size={24} 
-            color={isCompleted ? "#4CAF50" : "#4CAF50"} 
+            color={isCompleted ? theme.success : theme.success} 
           />
         </TouchableOpacity>
       </TouchableOpacity>
@@ -290,42 +297,42 @@ const CalendarScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.primary }]} edges={['top']}>
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: theme.background }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>Calendar</Text>
+        <View style={[styles.header, { backgroundColor: theme.primary }]}>
+          <Text style={[styles.title, { color: theme.surface }]}>Calendar</Text>
           <TouchableOpacity
             onPress={() => navigation.navigate('CreateTask')}
             style={styles.addButton}
           >
-            <Icon name="add" size={28} color="#FFFFFF" />
+            <Icon name="add" size={28} color={theme.surface} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.calendarContainer}>
+        <View style={[styles.calendarContainer, { backgroundColor: theme.cardBackground }]}>
           <Calendar
             onDayPress={onDayPress}
             markedDates={markedDates}
             theme={{
-              backgroundColor: '#ffffff',
-              calendarBackground: '#ffffff',
-              textSectionTitleColor: '#b6c1cd',
-              selectedDayBackgroundColor: '#2196F3',
-              selectedDayTextColor: '#ffffff',
-              todayTextColor: '#2196F3',
-              dayTextColor: '#2d4150',
-              textDisabledColor: '#d9e1e8',
-              dotColor: '#2196F3',
-              selectedDotColor: '#ffffff',
-              arrowColor: '#2196F3',
-              disabledArrowColor: '#d9e1e8',
-              monthTextColor: '#2d4150',
-              indicatorColor: '#2196F3',
+              backgroundColor: theme.cardBackground,
+              calendarBackground: theme.cardBackground,
+              textSectionTitleColor: theme.textLight,
+              selectedDayBackgroundColor: theme.primary,
+              selectedDayTextColor: theme.surface,
+              todayTextColor: theme.primary,
+              dayTextColor: theme.text,
+              textDisabledColor: theme.textLight,
+              dotColor: theme.primary,
+              selectedDotColor: theme.surface,
+              arrowColor: theme.primary,
+              disabledArrowColor: theme.textLight,
+              monthTextColor: theme.text,
+              indicatorColor: theme.primary,
               textDayFontWeight: '500',
               textMonthFontWeight: 'bold',
               textDayHeaderFontWeight: '500',
@@ -338,25 +345,25 @@ const CalendarScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 
         <View style={styles.legend}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#4CAF50' }]} />
-            <Text style={styles.legendText}>All Complete</Text>
+            <View style={[styles.legendDot, { backgroundColor: theme.success }]} />
+            <Text style={[styles.legendText, { color: theme.textSecondary }]}>All Complete</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#FF5252' }]} />
-            <Text style={styles.legendText}>Has Overdue</Text>
+            <View style={[styles.legendDot, { backgroundColor: theme.error }]} />
+            <Text style={[styles.legendText, { color: theme.textSecondary }]}>Has Overdue</Text>
           </View>
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: '#2196F3' }]} />
-            <Text style={styles.legendText}>Has Pending</Text>
+            <View style={[styles.legendDot, { backgroundColor: theme.primary }]} />
+            <Text style={[styles.legendText, { color: theme.textSecondary }]}>Has Pending</Text>
           </View>
         </View>
 
         <View style={styles.tasksSection}>
-          <Text style={styles.sectionTitle}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>
             {formatSelectedDate(selectedDate)}
           </Text>
           {tasksForDate.length === 0 ? (
-            <Text style={styles.emptyText}>No tasks for this date!</Text>
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No tasks for this date!</Text>
           ) : (
             tasksForDate.map(renderTask)
           )}
@@ -369,23 +376,19 @@ const CalendarScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#2196F3',
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#2196F3',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
   },
   addButton: {
     width: 48,
@@ -396,7 +399,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   calendarContainer: {
-    backgroundColor: '#FFFFFF',
     margin: 20,
     borderRadius: 12,
     shadowColor: '#000',
@@ -423,7 +425,6 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#666',
   },
   tasksSection: {
     padding: 20,
@@ -431,14 +432,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 15,
   },
   taskItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -447,13 +446,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
-  },
-  overdueTask: {
-    backgroundColor: '#FFEBEE',
-  },
-  completedTask: {
-    backgroundColor: '#E8F5E8',
-    opacity: 0.7,
   },
   taskLeft: {
     flexDirection: 'row',
@@ -467,14 +459,9 @@ const styles = StyleSheet.create({
   taskTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
-  },
-  overdueText: {
-    color: '#FF5252',
   },
   taskTime: {
     fontSize: 14,
-    color: '#666',
     marginTop: 2,
   },
   completeButton: {
@@ -485,7 +472,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
     marginTop: 20,
   },

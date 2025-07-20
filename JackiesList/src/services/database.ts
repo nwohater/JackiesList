@@ -162,11 +162,12 @@ class DatabaseService {
       throw new Error('Database not initialized');
     }
 
+    let query = 'SELECT * FROM tasks';
+    const params: any[] = [];
+
     try {
       console.log(`Getting tasks${date ? ` for date: ${date}` : ' (all tasks)'}`);
       
-      let query = 'SELECT * FROM tasks';
-      const params: any[] = [];
 
       if (date) {
         query += ' WHERE date(due_date) = date(?)';

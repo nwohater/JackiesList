@@ -11,11 +11,11 @@ class NotificationService {
 
   private configure() {
     PushNotification.configure({
-      onRegister: function (token) {
+      onRegister: function (token: { os: string; token: string }) {
         console.log('TOKEN:', token);
       },
 
-      onNotification: function (notification) {
+      onNotification: function (notification: any) {
         console.log('NOTIFICATION:', notification);
       },
 
@@ -37,7 +37,7 @@ class NotificationService {
         importance: 4, // HIGH importance
         vibrate: true,
       },
-      (created) => console.log(`createChannel returned '${created}'`)
+      (created: boolean) => console.log(`createChannel returned '${created}'`)
     );
   }
 
@@ -149,7 +149,6 @@ class NotificationService {
         channelId: 'jackies-list-channel',
         title: 'Overdue tasks',
         message: `You have ${overdueTasks.length} overdue ${overdueTasks.length === 1 ? 'task' : 'tasks'}`,
-        importance: 4, // HIGH importance
       });
     }
   }

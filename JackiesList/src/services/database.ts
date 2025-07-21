@@ -408,6 +408,151 @@ class DatabaseService {
 
     return categories;
   }
+
+  async getTaskWithCompletions(taskId: string): Promise<{ task: Task; completions: TaskCompletion[] } | null> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    // Get the task by ID directly from database
+    const [result] = await this.db.executeSql('SELECT * FROM tasks WHERE id = ?', [taskId]);
+    if (result.rows.length === 0) return null;
+
+    const row = result.rows.item(0);
+    const task: Task = {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      type: row.type,
+      dueDate: row.due_date,
+      dueTime: row.due_time,
+      isRecurring: row.is_recurring === 1,
+      recurrencePattern: row.recurrence_pattern,
+      recurrenceInterval: row.recurrence_interval,
+      priority: row.priority,
+      categoryId: row.category_id,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+
+    const completions = await this.getCompletions(taskId);
+    return { task, completions };
+  }
+
+  async getCompletionAnalyticsForDateRange(
+    startDate: string, 
+    endDate: string
+  ): Promise<{ tasks: Task[]; completions: TaskCompletion[] }> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    // Get all completions in the date range
+    const completionsQuery = `
+      SELECT * FROM task_completions 
+      WHERE date(completed_at) BETWEEN date(?) AND date(?)
+      ORDER BY completed_at DESC
+    `;
+    
+    const [completionsResult] = await this.db.executeSql(completionsQuery, [startDate, endDate]);
+    const completions: TaskCompletion[] = [];
+
+    for (let i = 0; i < completionsResult.rows.length; i++) {
+      const row = completionsResult.rows.item(i);
+      completions.push({
+        id: row.id,
+        taskId: row.task_id,
+        completedAt: row.completed_at,
+        notes: row.notes,
+      });
+    }
+
+    // Get all tasks that were completed in this date range
+    const taskIds = [...new Set(completions.map(c => c.taskId))];
+    const tasks: Task[] = [];
+
+    for (const taskId of taskIds) {
+      const [result] = await this.db.executeSql('SELECT * FROM tasks WHERE id = ?', [taskId]);
+      if (result.rows.length > 0) {
+        const row = result.rows.item(0);
+        tasks.push({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          type: row.type,
+          dueDate: row.due_date,
+          dueTime: row.due_time,
+          isRecurring: row.is_recurring === 1,
+          recurrencePattern: row.recurrence_pattern,
+          recurrenceInterval: row.recurrence_interval,
+          priority: row.priority,
+          categoryId: row.category_id,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at,
+        });
+      }
+    }
+
+    return { tasks, completions };
+  }
+
+  async getRecentCompletionTrends(days: number = 30): Promise<{
+    tasks: Task[];
+    completions: TaskCompletion[];
+  }> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    return this.getCompletionAnalyticsForDateRange(
+      startDate.toISOString().split('T')[0],
+      endDate.toISOString().split('T')[0]
+    );
+  }
+
+  async resetDatabase(): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    try {
+      console.log('Database: Starting database reset...');
+      
+      // Delete all data from tables in reverse order of dependencies
+      await this.db.executeSql('DELETE FROM task_completions');
+      console.log('Database: Cleared task_completions table');
+      
+      await this.db.executeSql('DELETE FROM tasks');
+      console.log('Database: Cleared tasks table');
+      
+      await this.db.executeSql('DELETE FROM categories');
+      console.log('Database: Cleared categories table');
+      
+      console.log('Database: Database reset completed successfully');
+    } catch (error) {
+      console.error('Database: Error resetting database:', error);
+      throw new Error(`Failed to reset database: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async dropAndRecreateDatabase(): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    try {
+      console.log('Database: Starting complete database recreation...');
+      
+      // Drop all tables
+      await this.db.executeSql('DROP TABLE IF EXISTS task_completions');
+      await this.db.executeSql('DROP TABLE IF EXISTS tasks');
+      await this.db.executeSql('DROP TABLE IF EXISTS categories');
+      
+      console.log('Database: All tables dropped');
+      
+      // Recreate tables
+      await this.createTables();
+      
+      console.log('Database: Database recreation completed successfully');
+    } catch (error) {
+      console.error('Database: Error recreating database:', error);
+      throw new Error(`Failed to recreate database: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 }
 
 export default new DatabaseService();

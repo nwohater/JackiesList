@@ -10,11 +10,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import { Task } from '../types';
+import { Task, TaskCompletion } from '../types';
 import taskService from '../services/taskService';
 import { formatTime, formatDate, isPastDue } from '../utils/date';
 import { formatRecurrenceText } from '../utils/recurrence';
 import { useTheme } from '../contexts/ThemeContext';
+import { type TaskCompletionAnalytics } from '../utils/completionAnalytics';
 
 interface TaskDetailScreenProps {
   navigation: any;
@@ -30,6 +31,10 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
   const [task, setTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [completionHistory, setCompletionHistory] = useState<{
+    completions: TaskCompletion[];
+    analytics: TaskCompletionAnalytics[];
+  } | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -45,6 +50,15 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
       if (taskData) {
         const completionStatus = await taskService.isTaskCompletedToday(taskData.id);
         setIsCompleted(completionStatus);
+        
+        // Load completion history
+        const history = await taskService.getTaskCompletionHistory(taskData.id);
+        if (history) {
+          setCompletionHistory({
+            completions: history.completions,
+            analytics: history.analytics,
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading task:', error);
@@ -61,6 +75,16 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
     try {
       await taskService.completeTask(task.id);
       setIsCompleted(true);
+      
+      // Reload completion history
+      const history = await taskService.getTaskCompletionHistory(task.id);
+      if (history) {
+        setCompletionHistory({
+          completions: history.completions,
+          analytics: history.analytics,
+        });
+      }
+      
       Alert.alert('Success', 'Task completed!', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
@@ -254,6 +278,65 @@ const TaskDetailScreen: React.FC<TaskDetailScreenProps> = ({ navigation, route }
           )}
         </View>
 
+        {/* Completion History */}
+        {completionHistory && completionHistory.completions.length > 0 && (
+          <View style={[styles.taskCard, { backgroundColor: theme.cardBackground }]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Completion History</Text>
+            {completionHistory.completions.slice(0, 5).map((completion, index) => {
+              const analytics = completionHistory.analytics[index];
+              
+              // Debug log
+              console.log('Completion data:', completion);
+              console.log('CompletedAt value:', completion.completedAt);
+              
+              const completionDate = new Date(completion.completedAt);
+              
+              // Validate date
+              const isValidDate = !isNaN(completionDate.getTime());
+              const dateString = isValidDate 
+                ? formatDate(completion.completedAt) 
+                : 'Unknown date';
+              const timeString = isValidDate 
+                ? completionDate.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                  })
+                : '';
+              
+              return (
+                <View key={completion.id} style={[styles.completionItem, { borderBottomColor: theme.border }]}>
+                  <View style={styles.completionHeader}>
+                    <Icon 
+                      name="check-circle" 
+                      size={20} 
+                      color={analytics?.wasCompletedLate ? theme.warning : theme.success} 
+                    />
+                    <Text style={[styles.completionDate, { color: theme.text }]}>
+                      {dateString}{timeString ? ` at ${timeString}` : ''}
+                    </Text>
+                  </View>
+                  {analytics?.wasCompletedLate && (
+                    <Text style={[styles.lateText, { color: theme.warning }]}>
+                      {taskService.getLateCompletionDescription(analytics)}
+                    </Text>
+                  )}
+                  {completion.notes && (
+                    <Text style={[styles.completionNotes, { color: theme.textSecondary }]}>
+                      "{completion.notes}"
+                    </Text>
+                  )}
+                </View>
+              );
+            })}
+            {completionHistory.completions.length > 5 && (
+              <Text style={[styles.moreCompletions, { color: theme.textSecondary }]}>
+                And {completionHistory.completions.length - 5} more completions...
+              </Text>
+            )}
+          </View>
+        )}
+
         <View style={styles.actions}>
           <TouchableOpacity
             style={[
@@ -408,6 +491,37 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  completionItem: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  completionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  completionDate: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  lateText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginLeft: 28,
+    marginBottom: 4,
+  },
+  completionNotes: {
+    fontSize: 12,
+    marginLeft: 28,
+    fontStyle: 'italic',
+  },
+  moreCompletions: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });
 

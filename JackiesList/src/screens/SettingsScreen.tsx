@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { getSettings, updateSettings, UserSettings } from '../services/settingsService';
 import { useTheme } from '../contexts/ThemeContext';
+import database from '../services/database';
 
 const SettingsScreen = () => {
   const { theme, themeMode, setThemeMode } = useTheme();
@@ -50,6 +51,41 @@ const SettingsScreen = () => {
     } catch (error) {
       Alert.alert('Error', 'Failed to save settings');
     }
+  };
+
+  const handleResetDatabase = () => {
+    Alert.alert(
+      'Reset Database',
+      'This will delete all your tasks, categories, and completion history. This action cannot be undone. Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await database.resetDatabase();
+              Alert.alert(
+                'Success', 
+                'Database has been reset. Please close and restart the app for changes to take effect.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      // Note: To auto-restart, you could install react-native-restart package
+                      // For now, user needs to manually restart the app
+                    }
+                  }
+                ]
+              );
+            } catch (error) {
+              console.error('Error resetting database:', error);
+              Alert.alert('Error', 'Failed to reset database');
+            }
+          }
+        }
+      ]
+    );
   };
 
   if (isLoading || !settings) {
@@ -137,6 +173,23 @@ const SettingsScreen = () => {
             onPress={handleSaveRecurringDays}
           >
             <Text style={styles.saveButtonText}>Save</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Data Management</Text>
+          
+          <TouchableOpacity
+            style={[styles.dangerButton, { borderColor: theme.error }]}
+            onPress={handleResetDatabase}
+          >
+            <Icon name="delete-forever" size={24} color={theme.error} />
+            <View style={styles.dangerButtonContent}>
+              <Text style={[styles.dangerButtonText, { color: theme.error }]}>Reset Database</Text>
+              <Text style={[styles.dangerButtonDescription, { color: theme.textSecondary }]}>
+                Delete all tasks and start fresh
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -249,6 +302,27 @@ const styles = StyleSheet.create({
   themeOptionText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  dangerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderWidth: 2,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  dangerButtonContent: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  dangerButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  dangerButtonDescription: {
+    fontSize: 12,
   },
 });
 

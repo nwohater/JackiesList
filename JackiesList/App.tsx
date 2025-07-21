@@ -5,6 +5,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 import CustomSplashScreen from './src/components/CustomSplashScreen';
 import database from './src/services/database';
 import notificationService from './src/services/notificationService';
+import taskService from './src/services/taskService';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import ThemedStatusBar from './src/components/ThemedStatusBar';
 
@@ -23,6 +24,10 @@ function App(): React.JSX.Element {
         notificationService.scheduleMorningNotification();
         notificationService.scheduleEveningNotification();
         console.log('App: Notification services initialized');
+        
+        // Generate any missing recurring task instances
+        await taskService.generateMissingRecurringInstances();
+        console.log('App: Recurring task instances checked');
         
         console.log('App: App initialization completed successfully');
         setAppReady(true);
